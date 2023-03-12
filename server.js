@@ -4,6 +4,11 @@ const express = require('express');
 const stripe = require('stripe')(process.env.STRIPE_PRIVATE_KEY);
 const cors = require('cors');
 const bodyParser = require("body-parser");
+const { default: axios } = require('axios');
+
+const HASURA_BASE_URL = process.env.HASURA_BASE_URL;
+
+const ORDER_STATUS = ['PENDING', 'CANCELLED', 'COMPLETED'];
 
 const app = express();
 
@@ -48,6 +53,24 @@ app.use(
         });
       }
   });
+
+  app.post("/completeOrder", async (req, res) => {
+      const {order_id} = req.body;
+      console.log('order_id:', JSON.stringify(order_id));
+      setTimeout(async () => {
+        console.log(`I'm running`);
+        const response = await axios.put(`${HASURA_BASE_URL}updateOrderState`,{ order_id, order_state: _.random(ORDER_STATUS) },
+        {
+          headers: {
+            'content-type': 'application/json',
+            'x-hasura-admin-secret': process.env.HASURA_ADMIN_SECRET
+          },
+        }
+        ).then(({data}) => data.response);
+        // console.log('response:', response);
+        res.send({id: response?.id})
+      }, 60000)
+  })
   
   // Webhook handler for asynchronous events.
   app.post("/webhook", async (req, res) => {
