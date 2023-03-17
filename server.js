@@ -56,21 +56,30 @@ app.use(
   });
 
   app.post("/completeOrder", async (req, res) => {
-      const {order_id} = req.body;
+    try {
+      const { order_id } = req.body;
       console.log('order_id:', JSON.stringify(order_id));
-      setTimeout(async () => {
-        console.log(`I'm running`);
-        const response = await axios.put(`${HASURA_BASE_URL}updateOrderState`,{ order_id, order_state: _.sample(ORDER_STATUS) },
+  
+      await new Promise(resolve => setTimeout(resolve, 60000));
+  
+      console.log(`I'm running`);
+      const response = await axios.put(`${HASURA_BASE_URL}updateOrderState`, { 
+          order_id, 
+          order_state: _.sample(ORDER_STATUS) 
+        },
         {
           headers: {
             'content-type': 'application/json',
             'x-hasura-admin-secret': process.env.HASURA_ADMIN_SECRET
           },
         }
-        ).then(({data}) => data.response)
-        .catch((err) => JSON.stringify(err));
-        // console.log('response:', response);
-        res.send({id: response?.id})
-      }, 60000)
-  })
+      );
+  
+      console.log('response:', response.data);
+      res.send({id: response?.data?.response?.id});
+    } catch (err) {
+      console.error('Error:', err);
+      res.status(500).send({error: err.message});
+    }
+  });
   app.listen(PORT, () => console.log(`Node server listening on port ${PORT}!`));
